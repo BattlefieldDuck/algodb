@@ -1,0 +1,50 @@
+name: 222-CLL
+
+on:
+  workflow_dispatch:
+
+env:
+  DEPTH: 8
+  MOVE_SET: "R R' R2 U U' U2 F F' F2"
+
+jobs:
+  solve:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        id: [CLL_Sune_1, CLL_Sune_2, CLL_Sune_3, CLL_Sune_4, CLL_Sune_5, CLL_Sune_6]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Run solver for ${{ matrix.id }}
+        run: |
+          go run ./cmd config/222-CLL.csv ${{ matrix.id }} $DEPTH "$MOVE_SET"
+
+      - name: Commit results
+        uses: EndBug/add-and-commit@v7
+        with:
+          message: "Add result for ${{ matrix.id }}"
+          add: "db/222-CLL/${{ matrix.id }}.json"
+
+  pr:
+    needs: solve
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Add solver results for 222-CLL"
+          title: "Add solver results for 222-CLL"
+          body: |
+            This PR adds the JSON results for all CLL_* runs at depth ${{ env.DEPTH }}.
+          base: main
+          branch: add-222-CLL-results
+          labels: solver-results
