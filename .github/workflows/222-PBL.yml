@@ -1,0 +1,71 @@
+name: 222-PBL
+
+permissions:
+  contents: write        # for pushing JSON files
+  pull-requests: write   # for opening the PR
+  issues: write          # for creating/applying labels
+
+on:
+  workflow_dispatch:
+
+env:
+  PREFIX: 222-PBL
+  DEPTH: 12
+  MOVE_SET: "R R' R2 U U' U2 F F' F2"
+
+jobs:
+  solve:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        id: [PBL_AA, PBL_AD, PBL_DD, PBL_AU, PBL_DU]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Run solver for ${{ matrix.id }}
+        run: |
+          go run ./cmd/cube config/${{ env.PREFIX }}.csv ${{ matrix.id }} ${{ env.DEPTH }} "$MOVE_SET"
+
+      - name: Upload JSON results
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PREFIX }}-results-${{ matrix.id }}
+          path: db/${{ env.PREFIX }}/${{ matrix.id }}.json
+
+  pr:
+    needs: solve
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Download all JSON results
+        uses: actions/download-artifact@v4
+        with:
+          path: db/${{ env.PREFIX }}
+          pattern: ${{ env.PREFIX }}-results-*
+          merge-multiple: true
+
+      - name: Create Pull Request with all results
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: |
+            Update solver results for ${{ env.PREFIX }} (depth ${{ env.DEPTH }})
+          title: Update solver results for ${{ env.PREFIX }}
+          body: |
+            Update solver-generated JSON outputs for the `${{ env.PREFIX }}.csv` input at depth ${{ env.DEPTH }}.
+            Includes result files for each matrix ID under `db/${{ env.PREFIX }}/`.
+          base: main
+          branch: ${{ env.PREFIX }}-results
+          labels: ${{ env.PREFIX }}-results,${{ env.PREFIX }}
