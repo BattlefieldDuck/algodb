@@ -575,15 +575,17 @@ func (c *Cube) Move(notation string) error {
 		notation = notation[1:]
 	}
 	// prime suffix
-	isPrime := strings.HasSuffix(notation, "'")
-	if isPrime {
-		notation = notation[:len(notation)-1]
+	isPrime := false
+	if n := len(notation); n > 0 && notation[n-1] == '\'' {
+		isPrime = true
+		notation = notation[:n-1]
 	}
+
 	// double suffix
 	times := 1
-	if strings.HasSuffix(notation, "2") {
+	if n := len(notation); n > 0 && notation[n-1] == '2' {
 		times = 2
-		notation = notation[:len(notation)-1]
+		notation = notation[:n-1]
 	}
 
 	// mapping
