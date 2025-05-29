@@ -1,8 +1,8 @@
 name: 222-CLL
 
 permissions:
-  contents: write        # allow us to push commits
-  pull-requests: write   # allow us to open PRs
+  contents: write
+  pull-requests: write
 
 on:
   workflow_dispatch:
@@ -18,16 +18,9 @@ jobs:
       matrix:
         id: [CLL_Sune_1, CLL_Sune_2, CLL_Sune_3, CLL_Sune_4, CLL_Sune_5, CLL_Sune_6]
 
-    outputs:
-      # expose the list of generated files so the PR job can pick them up
-      results: ${{ steps.produce.outputs.json-paths }}
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.21'
 
@@ -38,15 +31,13 @@ jobs:
       - name: Collect results paths
         id: produce
         run: |
-          # after solver, the JSON will be at db/222-CLL/${{ matrix.id }}.json
-          echo "::set-output name=json-paths::db/222-CLL/${{ matrix.id }}.json"
+          echo "json-paths=db/222-CLL/${{ matrix.id }}.json" >> $GITHUB_OUTPUT
 
   pr:
     needs: solve
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository + results
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: true
@@ -63,5 +54,5 @@ jobs:
           base: main
           branch: 222-CLL-results
           labels: solver-results
-          files: |
+          add-paths: |
             db/222-CLL/*.json
