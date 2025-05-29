@@ -48,11 +48,11 @@ jobs:
       - name: Check out repository + results
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0    # ensure full history so we can branch
+          fetch-depth: 0
           persist-credentials: true
 
       - name: Create Pull Request with all results
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: |
@@ -63,6 +63,5 @@ jobs:
           base: main
           branch: 222-CLL-results
           labels: solver-results
-          # add all JSONs in one go:
           files: |
             db/222-CLL/*.json
