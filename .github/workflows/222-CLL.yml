@@ -1,9 +1,10 @@
 name: 222-CLL
 
 permissions:
-  contents: write
-  pull-requests: write
-
+  contents: write        # for pushing JSON files
+  pull-requests: write   # for opening the PR
+  issues: write          # for creating/applying labels
+  
 on:
   workflow_dispatch:
 
@@ -39,7 +40,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           # unique per-matrix name so no conflicts
-          name: solver-results-${{ matrix.id }}
+          name: 222-CLL-results-${{ matrix.id }}
           path: db/222-CLL/${{ matrix.id }}.json
 
   pr:
@@ -65,7 +66,8 @@ jobs:
             Update solver results for 222-CLL (depth ${{ env.DEPTH }})
           title: Update solver results for 222-CLL
           body: |
-            This PR contains the JSON outputs for all CLL_* runs at depth ${{ env.DEPTH }}.
+            Update solver‐generated JSON outputs for the `222-CLL.csv` input at depth ${{ env.DEPTH }}.
+            Includes result files for each matrix ID under `db/222-CLL/`.
           base: main
           branch: 222-CLL-results
-          labels: solver-results
+          labels: 222-CLL-results,222-CLL
