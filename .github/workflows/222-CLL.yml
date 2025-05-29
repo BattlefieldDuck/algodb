@@ -16,8 +16,6 @@ env:
 jobs:
   solve:
     runs-on: ubuntu-latest
-    env:
-      NO_COLOR: false
     strategy:
       matrix:
         id: [CLL_Sune_1, CLL_Sune_2, CLL_Sune_3, CLL_Sune_4, CLL_Sune_5, CLL_Sune_6]

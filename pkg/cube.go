@@ -62,7 +62,7 @@ var ansiBg = map[string]string{
 }
 
 const (
-	sticker = ".."
+	sticker = "⠀⠀" // two spaces for a square sticker
 	reset   = "\x1b[0m"
 )
 
