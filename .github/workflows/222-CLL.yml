@@ -38,7 +38,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           # unique per-matrix name so no conflicts
-          name: 222-CLL-results
+          name: 222-CLL-results-${{ matrix.id }}
           path: db/222-CLL/${{ matrix.id }}.json
 
   pr:
@@ -55,9 +55,10 @@ jobs:
       - name: Download all JSON results
         uses: actions/download-artifact@v4
         with:
-          name: 222-CLL-results
           path: db/222-CLL
-
+          pattern: 222-CLL-results-*
+          merge-multiple: true
+          
       - name: Create Pull Request with all results
         uses: peter-evans/create-pull-request@v7
         with:
