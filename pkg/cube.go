@@ -62,13 +62,13 @@ var ansiBg = map[string]string{
 }
 
 const (
-	sticker = "⠀⠀" // two spaces for a square sticker
+	sticker = "  " // two spaces for a square sticker
 	reset   = "\x1b[0m"
 )
 
 func (c *Cube) DisplayColor() {
 	n := c.Size
-	indent := strings.Repeat("⠀", n*2)
+	indent := strings.Repeat(" ", n*2)
 
 	// helper to paint a row of stickers
 	paintRow := func(cells []string) {
