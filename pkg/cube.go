@@ -102,8 +102,8 @@ const (
 )
 
 // colorChar maps face indices to display letters
-// DisplayColor prints the cube with ANSI-colored stickers.
-func (c *Cube) DisplayColor() {
+// DisplayColorANSI prints the cube with ANSI-colored stickers.
+func (c *Cube) DisplayColorANSI() {
 	n := c.Size
 	indent := strings.Repeat(" ", n*2)
 	// helper to paint a row of stickers
@@ -136,6 +136,88 @@ func (c *Cube) DisplayColor() {
 		row := c.Faces[Dface][r*n : r*n+n]
 		fmt.Print(indent)
 		paintRow(row)
+	}
+}
+
+// colorEmoji maps face indices to colored square emojis
+var colorEmoji = []string{
+	"⬜", // Uface: white
+	"🟥", // Rface: red
+	"🟩", // Fface: green
+	"🟨", // Dface: yellow
+	"🟧", // Lface: orange
+	"🟦", // Bface: blue
+}
+
+// DisplayColorUnicode prints the cube net using Unicode colored squares.
+func (c *Cube) DisplayColorUnicode() {
+	n := c.Size
+	indent := strings.Repeat("  ", n) // two spaces per sticker width
+
+	paintRow := func(cells []byte) {
+		for _, idx := range cells {
+			fmt.Print(colorEmoji[int(idx)])
+		}
+		fmt.Println()
+	}
+
+	// U face (centered above)
+	for r := 0; r < n; r++ {
+		fmt.Print(indent)
+		paintRow(c.Faces[Uface][r*n : r*n+n])
+	}
+
+	// middle L-F-R-B
+	for r := 0; r < n; r++ {
+		var row []byte
+		for _, f := range []int{Lface, Fface, Rface, Bface} {
+			row = append(row, c.Faces[f][r*n:r*n+n]...)
+		}
+		paintRow(row)
+	}
+
+	// D face (centered below)
+	for r := 0; r < n; r++ {
+		fmt.Print(indent)
+		paintRow(c.Faces[Dface][r*n : r*n+n])
+	}
+}
+
+func (c *Cube) DisplayColorUnicodeUFace() {
+	tmp := c.Copy()
+	tmp.MoveRPrime(c.Size)
+
+	n := tmp.Size
+	indent := strings.Repeat("  ", 2) // two spaces per sticker width
+
+	paintRow := func(cells []byte) {
+		for _, idx := range cells {
+			fmt.Print(colorEmoji[int(idx)])
+		}
+		fmt.Println()
+	}
+
+	// U face (centered above)
+	for r := n - 1; r < n; r++ {
+		fmt.Print(indent)
+		paintRow(tmp.Faces[Uface][r*n : r*n+n])
+	}
+
+	// middle L-F-R
+	for r := 0; r < n; r++ {
+		var row []byte
+		row = append(row, tmp.Faces[Lface][r*n+n-1:r*n+n]...)
+		row = append(row, tmp.Faces[Fface][r*n:r*n+n]...)
+		row = append(row, tmp.Faces[Rface][r*n:r*n+1]...)
+
+		fmt.Print("  ")
+		paintRow(row)
+	}
+
+	// D face (centered below)
+	for r := 0; r < 1; r++ {
+		fmt.Print(indent)
+		paintRow(tmp.Faces[Dface][r*n : r*n+n])
 	}
 }
 

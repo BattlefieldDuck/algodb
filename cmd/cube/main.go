@@ -91,7 +91,10 @@ func main() {
 	pkg.Printf("MoveSet: %s\n", movesArg)
 
 	fmt.Printf("\n%dx%dx%d Cube - %s\n\n", n, n, n, scramble)
-	c.DisplayColor()
+	c.DisplayColorUnicode()
+
+	fmt.Printf("\nUp Face\n\n")
+	c.DisplayColorUnicodeUFace()
 	fmt.Println()
 
 	// Compute branching parameters
