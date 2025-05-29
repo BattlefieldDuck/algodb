@@ -11,6 +11,8 @@ func displayCube(c *Cube) {
 	c.Display()
 	fmt.Printf("\nDisplayColorANSI\n\n")
 	c.DisplayColorANSI()
+	fmt.Printf("\nDisplayColorANSIUFace\n\n")
+	c.DisplayColorANSIUFace()
 	fmt.Printf("\nDisplayColorUnicode\n\n")
 	c.DisplayColorUnicode()
 	fmt.Printf("\nDisplayColorUnicodeFrontFaceOnly\n\n")

@@ -139,6 +139,47 @@ func (c *Cube) DisplayColorANSI() {
 	}
 }
 
+func (c *Cube) DisplayColorANSIUFace() {
+	tmp := c.Copy()
+	tmp.MoveRPrime(c.Size)
+
+	n := tmp.Size
+	indent := strings.Repeat(" ", 4)
+	// helper to paint a row of stickers
+	paintRow := func(cells []byte) {
+		for _, idx := range cells {
+			bg := ansiBg[int(idx)]
+			fmt.Print(bg + sticker + reset)
+		}
+		fmt.Println()
+	}
+
+	// U face
+	for r := n - 1; r < n; r++ {
+		row := tmp.Faces[Uface][r*n : r*n+n]
+		fmt.Print(indent)
+		paintRow(row)
+	}
+
+	// middle L-F-R-B
+	for r := 0; r < n; r++ {
+		var row []byte
+		row = append(row, tmp.Faces[Lface][r*n+n-1:r*n+n]...)
+		row = append(row, tmp.Faces[Fface][r*n:r*n+n]...)
+		row = append(row, tmp.Faces[Rface][r*n:r*n+1]...)
+
+		fmt.Print("  ")
+		paintRow(row)
+	}
+
+	// D face
+	for r := 0; r < 1; r++ {
+		row := tmp.Faces[Dface][r*n : r*n+n]
+		fmt.Print(indent)
+		paintRow(row)
+	}
+}
+
 // colorEmoji maps face indices to colored square emojis
 var colorEmoji = []string{
 	"⬜", // Uface: white
