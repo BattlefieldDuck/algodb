@@ -1,5 +1,8 @@
 name: 222-CLL
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
 
@@ -10,6 +13,9 @@ env:
 jobs:
   solve:
     runs-on: ubuntu-latest
+    env:
+      FORCE_COLOR: "1"
+      TERM: xterm-256color
     strategy:
       matrix:
         id: [CLL_Sune_1, CLL_Sune_2, CLL_Sune_3, CLL_Sune_4, CLL_Sune_5, CLL_Sune_6]
