@@ -62,7 +62,7 @@ var ansiBg = map[string]string{
 }
 
 const (
-	sticker = "  "
+	sticker = ".."
 	reset   = "\x1b[0m"
 )
 
