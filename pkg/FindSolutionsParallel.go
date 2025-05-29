@@ -50,7 +50,6 @@ func FindSolutionsParallel(
 
 				// record solution if solved
 				if check(next) {
-					solMu.Lock()
 					seq := ""
 					for i, mv := range f.path {
 						if i > 0 {
@@ -58,9 +57,12 @@ func FindSolutionsParallel(
 						}
 						seq += mv
 					}
+
+					solMu.Lock()
 					solutions = append(solutions, seq)
-					Printf("Solution found: %s\n", seq)
 					solMu.Unlock()
+
+					Printf("Solution found: %s\n", seq)
 				}
 
 				// push deeper children

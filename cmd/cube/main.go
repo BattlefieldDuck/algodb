@@ -85,9 +85,6 @@ func main() {
 		log.Fatalf("Error scrambling cube: %v", err)
 	}
 
-	// Measure start time
-	start := time.Now()
-
 	// Display cube state
 	pkg.Printf("ID: %s\n", targetID)
 	pkg.Printf("MaxDepth: %d\n", maxDepth)
@@ -127,9 +124,12 @@ func main() {
 		bar.Close()
 	}()
 
-	// Estimate time assuming 90k nodes per second
-	estSec := total / 90000
-	pkg.Printf("Estimated time at 90k nodes/s: %d seconds (~%s)\n", estSec, time.Duration(estSec)*time.Second)
+	// Estimate time assuming 600k nodes per second
+	estSec := total / 600000
+	pkg.Printf("Estimated time at 600k nodes/s: %d seconds (~%s)\n", estSec, time.Duration(estSec)*time.Second)
+
+	// Measure start time
+	start := time.Now()
 
 	// Run parallel solver
 	solutions := pkg.FindSolutionsParallel(c, moves, isSolved, maxDepth, nil)

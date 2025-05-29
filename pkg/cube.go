@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -681,158 +680,121 @@ func (c *Cube) Moves(seqs ...string) error {
 	return nil
 }
 
+var mapping = map[string]struct {
+	face   string
+	isWide bool
+}{
+	"Uw": {"U", true}, "u": {"U", true},
+	"Dw": {"D", true}, "d": {"D", true},
+	"Rw": {"R", true}, "r": {"R", true},
+	"Lw": {"L", true}, "l": {"L", true},
+	"Fw": {"F", true}, "f": {"F", true},
+	"Bw": {"B", true}, "b": {"B", true},
+}
+
 func (c *Cube) Move(notation string) error {
-	token := notation
-	times := 1
-	isPrime := false
-
-	// 1) strip a trailing "'" → prime (unless it was a 2-turn)
-	if strings.HasSuffix(token, "'") {
-		isPrime = true
-		token = token[:len(token)-1]
-	}
-
-	// 2) strip a trailing "2" → double‐turn
-	if strings.HasSuffix(token, "2") {
-		times = 2
-		token = token[:len(token)-1]
-	} else if strings.HasSuffix(token, "3") {
-		times = 3
-		token = token[:len(token)-1]
-	}
-
-	if token == "" {
-		return fmt.Errorf("invalid move: %s", notation)
-	}
-
-	// determine face/axis and width
-	var face byte
 	width := 1
-
-	replacer := strings.NewReplacer(
-		"u", "Uw",
-		"d", "Dw",
-		"r", "Rw",
-		"l", "Lw",
-		"f", "Fw",
-		"b", "Bw",
-	)
-	token = replacer.Replace(token)
-
-	// wide move notation ends in 'w' or 'W'
-	if last := token[len(token)-1]; last == 'w' || last == 'W' {
-		prefix := token[:len(token)-1]
-		if len(prefix) < 1 {
-			return fmt.Errorf("invalid wide move: %s", notation)
+	if len(notation) > 0 {
+		if ch := notation[0]; ch >= '0' && ch <= '9' {
+			width = int(ch - '0')
+			notation = notation[1:]
 		}
-		face = prefix[len(prefix)-1]
-		num := prefix[:len(prefix)-1]
-		if num == "" {
+	}
+
+	isPrime := false
+	if strings.HasSuffix(notation, "'") {
+		isPrime = true
+		notation = notation[:len(notation)-1]
+	}
+
+	times := 1
+	if strings.HasSuffix(notation, "2") {
+		times = 2
+		notation = notation[:len(notation)-1]
+	}
+
+	if m, ok := mapping[notation]; ok {
+		notation = m.face
+		if m.isWide && width <= 1 {
 			width = 2
-		} else {
-			w, err := strconv.Atoi(num)
-			if err != nil {
-				return fmt.Errorf("invalid width in move %s: %v", notation, err)
-			}
-			width = w
-		}
-	} else if len(token) == 1 {
-		// normal single‐layer
-		face = token[0]
-		width = 1
-	} else {
-		// maybe a numeric-prefix wide without 'w', e.g. "3R"
-		// parse leading number
-		i := 0
-		for ; i < len(token) && token[i] >= '0' && token[i] <= '9'; i++ {
-		}
-		if i > 0 && i < len(token) {
-			num := token[:i]
-			w, err := strconv.Atoi(num)
-			if err == nil {
-				width = w
-				face = token[i]
-			} else {
-				return fmt.Errorf("invalid move: %s", notation)
-			}
-		} else {
-			return fmt.Errorf("invalid move: %s", notation)
 		}
 	}
 
 	// apply the move the required number of times
 	for range times {
-		switch face {
-		// face-turns
-		case 'R':
-			if isPrime {
-				c.MoveRPrime(width)
-			} else {
-				c.MoveR(width)
-			}
-		case 'L':
-			if isPrime {
-				c.MoveLPrime(width)
-			} else {
-				c.MoveL(width)
-			}
-		case 'U':
+		switch notation {
+		// Face Turns
+		case "U":
 			if isPrime {
 				c.MoveUPrime(width)
 			} else {
 				c.MoveU(width)
 			}
-		case 'D':
+		case "D":
 			if isPrime {
 				c.MoveDPrime(width)
 			} else {
 				c.MoveD(width)
 			}
-		case 'F':
+		case "R":
+			if isPrime {
+				c.MoveRPrime(width)
+			} else {
+				c.MoveR(width)
+			}
+		case "L":
+			if isPrime {
+				c.MoveLPrime(width)
+			} else {
+				c.MoveL(width)
+			}
+		case "F":
 			if isPrime {
 				c.MoveFPrime(width)
 			} else {
 				c.MoveF(width)
 			}
-		case 'B':
+		case "B":
 			if isPrime {
 				c.MoveBPrime(width)
 			} else {
 				c.MoveB(width)
 			}
-		case 'M':
+
+		// Slice Moves
+		case "M":
 			if isPrime {
 				c.MoveMPrime()
 			} else {
 				c.MoveM()
 			}
-		case 'E':
+		case "E":
 			if isPrime {
 				c.MoveEPrime()
 			} else {
 				c.MoveE()
 			}
-		case 'S':
+		case "S":
 			if isPrime {
 				c.MoveSPrime()
 			} else {
 				c.MoveS()
 			}
 
-		// whole-cube rotations
-		case 'x':
+		// Cube Rotations
+		case "x":
 			if isPrime {
 				c.RotateXPrime()
 			} else {
 				c.RotateX()
 			}
-		case 'y':
+		case "y":
 			if isPrime {
 				c.RotateYPrime()
 			} else {
 				c.RotateY()
 			}
-		case 'z':
+		case "z":
 			if isPrime {
 				c.RotateZPrime()
 			} else {
@@ -867,15 +829,4 @@ func (c *Cube) Copy() *Cube {
 		faces[face] = copyStickers
 	}
 	return &Cube{Size: c.Size, Faces: faces}
-}
-
-func main() {
-	for _, sz := range []int{2, 3, 4, 5, 6, 7} {
-		fmt.Printf("\n%dx%dx%d Cube:\n", sz, sz, sz)
-		NewCube(sz).DisplayColor()
-	}
-
-	c := NewCube(3)
-	c.Moves("(U2) x R2 D2 R U R' D2 R U' R")
-	c.DisplayColor()
 }
