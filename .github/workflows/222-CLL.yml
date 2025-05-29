@@ -18,14 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        prefix: [CLL_Sune, CLL_AS, CLL_Pi, CLL_U, CLL_L, CLL_T, CLL_H]
-        num:    [1,2,3,4,5,6]
-        exclude:
-          # CLL_H only has 1–4, so drop the 5 & 6 combos
-          - prefix: CLL_H
-            num:    5
-          - prefix: CLL_H
-            num:    6
+        id: [CLL_Sune_1, CLL_Sune_2, CLL_Sune_3, CLL_Sune_4, CLL_Sune_5, CLL_Sune_6, CLL_AS_1, CLL_AS_2, CLL_AS_3, CLL_AS_4, CLL_AS_5, CLL_AS_6, CLL_Pi_1, CLL_Pi_2, CLL_Pi_3, CLL_Pi_4, CLL_Pi_5, CLL_Pi_6, CLL_U_1, CLL_U_2, CLL_U_3, CLL_U_4, CLL_U_5, CLL_U_6, CLL_L_1, CLL_L_2, CLL_L_3, CLL_L_4, CLL_L_5, CLL_L_6, CLL_T_1, CLL_T_2, CLL_T_3, CLL_T_4, CLL_T_5, CLL_T_6, CLL_H_1, CLL_H_2, CLL_H_3, CLL_H_4]
 
     steps:
       - name: Checkout repo
