@@ -33,11 +33,6 @@ func FindSolutions(initial *Cube, moveSet []string, check CheckFunc, maxDepth in
 				}
 			}
 
-			// if err := next.Moves(path...); err != nil {
-			// 	Printf("skipping invalid move %s: %v\n", m, err)
-			// 	continue
-			// }
-
 			// tick the progress bar
 			if progress != nil {
 				progress <- struct{}{}

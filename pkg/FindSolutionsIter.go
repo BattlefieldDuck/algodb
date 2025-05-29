@@ -42,10 +42,6 @@ func FindSolutionsIter(
 					continue
 				}
 			}
-			// if err := next.Moves(newPath...); err != nil {
-			// 	fmt.Printf("skipping invalid move %s: %v\n", m, err)
-			// 	continue
-			// }
 
 			// progress tick
 			if progress != nil {
