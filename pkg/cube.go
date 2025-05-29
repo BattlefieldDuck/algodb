@@ -17,8 +17,9 @@ const (
 // Cube uses a fixed array of byte-slices for faces: 0=U,1=R,2=F,3=D,4=L,5=B
 // Each byte stores the face index of that sticker.
 type Cube struct {
-	Size  int
-	Faces [6][]byte
+	Size   int
+	Faces  [6][]byte
+	buffer []byte // reusable temp buffer
 }
 
 // colorChar maps face indices to display letters
@@ -26,7 +27,7 @@ var colorChar = []rune{'W', 'R', 'G', 'Y', 'O', 'B'}
 
 // NewCube creates a solved n×n cube.
 func NewCube(n int) *Cube {
-	c := &Cube{Size: n}
+	c := &Cube{Size: n, buffer: make([]byte, n*n)}
 	for f := 0; f < 6; f++ {
 		c.Faces[f] = make([]byte, n*n)
 		for i := range c.Faces[f] {
@@ -39,8 +40,8 @@ func NewCube(n int) *Cube {
 // Copy returns a deep copy of this cube.
 func (c *Cube) Copy() *Cube {
 	n := c.Size
-	newC := &Cube{Size: n}
-	for f := 0; f < 6; f++ {
+	newC := &Cube{Size: n, buffer: make([]byte, n*n)}
+	for f := range 6 {
 		newC.Faces[f] = make([]byte, n*n)
 		copy(newC.Faces[f], c.Faces[f])
 	}
@@ -139,184 +140,378 @@ func (c *Cube) DisplayColor() {
 }
 
 // rotateFaceCWBytes rotates an n×n byte-slice CW in-place.
-func rotateFaceCWBytes(face []byte, n int) {
-	tmp := make([]byte, len(face))
-	for r := 0; r < n; r++ {
-		for c := 0; c < n; c++ {
-			tmp[c*n+(n-1-r)] = face[r*n+c]
+func (c *Cube) rotateFaceCWBytes(face int) {
+	for r := range c.Size {
+		for col := range c.Size {
+			c.buffer[col*c.Size+(c.Size-1-r)] = c.Faces[face][r*c.Size+col]
 		}
 	}
-	copy(face, tmp)
+	copy(c.Faces[face], c.buffer)
 }
 
-// rotateFaceCCWBytes rotates CCW via three CWs.
-func rotateFaceCCWBytes(face []byte, n int) {
-	for i := 0; i < 3; i++ {
-		rotateFaceCWBytes(face, n)
+func (c *Cube) rotateFaceCCWBytes(face int) {
+	for r := range c.Size {
+		for col := range c.Size {
+			c.buffer[(c.Size-1-col)*c.Size+r] = c.Faces[face][r*c.Size+col]
+		}
 	}
-}
-
-func getRowBytes(face []byte, r, n int) []byte {
-	out := make([]byte, n)
-	copy(out, face[r*n:(r+1)*n])
-	return out
-}
-
-func setRowBytes(face []byte, r, n int, data []byte) {
-	for i := 0; i < n; i++ {
-		face[r*n+i] = data[i]
-	}
-}
-
-func getColBytes(face []byte, col, n int) []byte {
-	out := make([]byte, n)
-	for i := 0; i < n; i++ {
-		out[i] = face[i*n+col]
-	}
-	return out
-}
-
-func setColBytes(face []byte, col, n int, data []byte) {
-	for i := 0; i < n; i++ {
-		face[i*n+col] = data[i]
-	}
-}
-
-func reverseBytes(s []byte) {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
+	copy(c.Faces[face], c.buffer)
 }
 
 // Face turns
 func (c *Cube) MoveU(width int) {
 	n := c.Size
-	rotateFaceCWBytes(c.Faces[Uface], n)
+	faces := c.Faces
+	f, r, b, l := faces[Fface], faces[Rface], faces[Bface], faces[Lface]
+
+	// rotate the up face CW, and if it's a full slice also rotate down CCW
+	c.rotateFaceCWBytes(Uface)
 	if width == n {
-		rotateFaceCCWBytes(c.Faces[Dface], n)
+		c.rotateFaceCCWBytes(Dface)
 	}
+
+	var tmp byte
 	for layer := 0; layer < width; layer++ {
-		f := getRowBytes(c.Faces[Fface], layer, n)
-		r := getRowBytes(c.Faces[Rface], layer, n)
-		b := getRowBytes(c.Faces[Bface], layer, n)
-		l := getRowBytes(c.Faces[Lface], layer, n)
-		setRowBytes(c.Faces[Fface], layer, n, r)
-		setRowBytes(c.Faces[Rface], layer, n, b)
-		setRowBytes(c.Faces[Bface], layer, n, l)
-		setRowBytes(c.Faces[Lface], layer, n, f)
+		base := layer * n
+		for x := 0; x < n; x++ {
+			i := base + x
+			// cycle F → R → B → L → F
+			tmp = f[i]
+			f[i] = r[i]
+			r[i] = b[i]
+			b[i] = l[i]
+			l[i] = tmp
+		}
 	}
 }
 
-func (c *Cube) MoveUPrime(width int) { c.MoveU(width); c.MoveU(width); c.MoveU(width) }
+func (c *Cube) MoveUPrime(width int) {
+	n := c.Size
+	faces := c.Faces
+	f, r, b, l := faces[Fface], faces[Rface], faces[Bface], faces[Lface]
+
+	// rotate the up face CCW, and if it's a full slice also rotate down CW
+	c.rotateFaceCCWBytes(Uface)
+	if width == n {
+		c.rotateFaceCWBytes(Dface)
+	}
+
+	var tmp byte
+	for layer := 0; layer < width; layer++ {
+		base := layer * n
+		for x := 0; x < n; x++ {
+			i := base + x
+			// inverse cycle F ← R ← B ← L ← F
+			tmp = f[i]
+			f[i] = l[i]
+			l[i] = b[i]
+			b[i] = r[i]
+			r[i] = tmp
+		}
+	}
+}
 
 func (c *Cube) MoveD(width int) {
 	n := c.Size
-	rotateFaceCWBytes(c.Faces[Dface], n)
+	faces := c.Faces
+	f, r, b, l := faces[Fface], faces[Rface], faces[Bface], faces[Lface]
+
+	// rotate the down face CW, and if it's a full slice also rotate up CCW
+	c.rotateFaceCWBytes(Dface)
 	if width == n {
-		rotateFaceCCWBytes(c.Faces[Uface], n)
+		c.rotateFaceCCWBytes(Uface)
 	}
+
+	var tmp byte
 	for layer := 0; layer < width; layer++ {
 		row := n - 1 - layer
-		f := getRowBytes(c.Faces[Fface], row, n)
-		r := getRowBytes(c.Faces[Rface], row, n)
-		b := getRowBytes(c.Faces[Bface], row, n)
-		l := getRowBytes(c.Faces[Lface], row, n)
-		setRowBytes(c.Faces[Fface], row, n, l)
-		setRowBytes(c.Faces[Lface], row, n, b)
-		setRowBytes(c.Faces[Bface], row, n, r)
-		setRowBytes(c.Faces[Rface], row, n, f)
+		base := row * n
+		for x := 0; x < n; x++ {
+			i := base + x
+			// cycle F ← L ← B ← R ← F
+			tmp = f[i]
+			f[i] = l[i]
+			l[i] = b[i]
+			b[i] = r[i]
+			r[i] = tmp
+		}
 	}
 }
 
-func (c *Cube) MoveDPrime(width int) { c.MoveD(width); c.MoveD(width); c.MoveD(width) }
+func (c *Cube) MoveDPrime(width int) {
+	n := c.Size
+	faces := c.Faces
+	f, r, b, l := faces[Fface], faces[Rface], faces[Bface], faces[Lface]
+
+	// rotate the down face CCW, and if it's a full slice also rotate up CW
+	c.rotateFaceCCWBytes(Dface)
+	if width == n {
+		c.rotateFaceCWBytes(Uface)
+	}
+
+	var tmp byte
+	for layer := 0; layer < width; layer++ {
+		row := n - 1 - layer
+		base := row * n
+		for x := 0; x < n; x++ {
+			i := base + x
+			// inverse cycle F → R → B → L → F
+			tmp = f[i]
+			f[i] = r[i]
+			r[i] = b[i]
+			b[i] = l[i]
+			l[i] = tmp
+		}
+	}
+}
 
 func (c *Cube) MoveR(width int) {
 	n := c.Size
-	rotateFaceCWBytes(c.Faces[Rface], n)
+	faces := c.Faces
+	u, f, d, b := faces[Uface], faces[Fface], faces[Dface], faces[Bface]
+
+	// rotate the right face CW, and if it's a full slice also rotate left CCW
+	c.rotateFaceCWBytes(Rface)
 	if width == n {
-		rotateFaceCCWBytes(c.Faces[Lface], n)
+		c.rotateFaceCCWBytes(Lface)
 	}
+
+	n1 := n - 1
+	var tmp byte
 	for layer := 0; layer < width; layer++ {
-		colU := getColBytes(c.Faces[Uface], n-1-layer, n)
-		colF := getColBytes(c.Faces[Fface], n-1-layer, n)
-		colD := getColBytes(c.Faces[Dface], n-1-layer, n)
-		colB := getColBytes(c.Faces[Bface], layer, n)
-		setColBytes(c.Faces[Uface], n-1-layer, n, colF)
-		setColBytes(c.Faces[Fface], n-1-layer, n, colD)
-		reverseBytes(colB)
-		setColBytes(c.Faces[Dface], n-1-layer, n, colB)
-		reverseBytes(colU)
-		setColBytes(c.Faces[Bface], layer, n, colU)
+		col := n1 - layer
+		for i := 0; i < n; i++ {
+			j := i*n + col        // index on U/F/D
+			k := (n1-i)*n + layer // index on B
+
+			// cycle U → F → D → B → U
+			tmp = u[j]
+			u[j] = f[j]
+			f[j] = d[j]
+			d[j] = b[k]
+			b[k] = tmp
+		}
 	}
 }
 
-func (c *Cube) MoveRPrime(width int) { c.MoveR(width); c.MoveR(width); c.MoveR(width) }
+func (c *Cube) MoveRPrime(width int) {
+	n := c.Size
+	faces := c.Faces
+	u, f, d, b := faces[Uface], faces[Fface], faces[Dface], faces[Bface]
+
+	// rotate the right face CCW, and if it's a full slice also rotate left CW
+	c.rotateFaceCCWBytes(Rface)
+	if width == n {
+		c.rotateFaceCWBytes(Lface)
+	}
+
+	n1 := n - 1
+	var tmp byte
+	for layer := 0; layer < width; layer++ {
+		col := n1 - layer
+		for i := 0; i < n; i++ {
+			j := i*n + col        // index on U/F/D
+			k := (n1-i)*n + layer // index on B
+
+			// inverse cycle U ← F ← D ← B ← U
+			tmp = u[j]
+			u[j] = b[k]
+			b[k] = d[j]
+			d[j] = f[j]
+			f[j] = tmp
+		}
+	}
+}
 
 func (c *Cube) MoveL(width int) {
 	n := c.Size
-	rotateFaceCWBytes(c.Faces[Lface], n)
+	faces := c.Faces
+	u, f, d, b := faces[Uface], faces[Fface], faces[Dface], faces[Bface]
+
+	// rotate the left face CW, and if full‐cube slice also rotate right CCW
+	c.rotateFaceCWBytes(Lface)
 	if width == n {
-		rotateFaceCCWBytes(c.Faces[Rface], n)
+		c.rotateFaceCCWBytes(Rface)
 	}
+
+	n1 := n - 1
+	var tmp byte
 	for layer := 0; layer < width; layer++ {
-		colU := getColBytes(c.Faces[Uface], layer, n)
-		colF := getColBytes(c.Faces[Fface], layer, n)
-		colD := getColBytes(c.Faces[Dface], layer, n)
-		colB := getColBytes(c.Faces[Bface], n-1-layer, n)
-		reverseBytes(colB)
-		setColBytes(c.Faces[Uface], layer, n, colB)
-		reverseBytes(colD)
-		setColBytes(c.Faces[Bface], n-1-layer, n, colD)
-		setColBytes(c.Faces[Dface], layer, n, colF)
-		setColBytes(c.Faces[Fface], layer, n, colU)
+		col := layer
+		for i := 0; i < n; i++ {
+			j := i*n + col               // index on U/F/D
+			k := (n1-i)*n + (n1 - layer) // index on B
+
+			// cycle U ← B ← D ← F ← U
+			tmp = u[j]
+			u[j] = b[k]
+			b[k] = d[j]
+			d[j] = f[j]
+			f[j] = tmp
+		}
 	}
 }
 
-func (c *Cube) MoveLPrime(width int) { c.MoveL(width); c.MoveL(width); c.MoveL(width) }
+func (c *Cube) MoveLPrime(width int) {
+	n := c.Size
+	faces := c.Faces
+	u, f, d, b := faces[Uface], faces[Fface], faces[Dface], faces[Bface]
+
+	// rotate the left face CCW, and if full‐cube slice also rotate right CW
+	c.rotateFaceCCWBytes(Lface)
+	if width == n {
+		c.rotateFaceCWBytes(Rface)
+	}
+
+	n1 := n - 1
+	var tmp byte
+	for layer := 0; layer < width; layer++ {
+		col := layer
+		for i := 0; i < n; i++ {
+			j := i*n + col               // index on U/F/D
+			k := (n1-i)*n + (n1 - layer) // index on B
+
+			// inverse cycle U → F → D → B → U
+			tmp = u[j]
+			u[j] = f[j]
+			f[j] = d[j]
+			d[j] = b[k]
+			b[k] = tmp
+		}
+	}
+}
 
 func (c *Cube) MoveF(width int) {
 	n := c.Size
-	rotateFaceCWBytes(c.Faces[Fface], n)
+	faces := c.Faces
+	u, r, d, l := faces[Uface], faces[Rface], faces[Dface], faces[Lface]
+
+	// rotate the front face CW, and if it’s a full slice also rotate back CCW
+	c.rotateFaceCWBytes(Fface)
 	if width == n {
-		rotateFaceCCWBytes(c.Faces[Bface], n)
+		c.rotateFaceCCWBytes(Bface)
 	}
+
+	n1 := n - 1
+	var tmp byte
 	for layer := 0; layer < width; layer++ {
-		rowU := getRowBytes(c.Faces[Uface], n-1-layer, n)
-		colR := getColBytes(c.Faces[Rface], layer, n)
-		rowD := getRowBytes(c.Faces[Dface], layer, n)
-		colL := getColBytes(c.Faces[Lface], n-1-layer, n)
-		setColBytes(c.Faces[Rface], layer, n, rowU)
-		reverseBytes(colR)
-		setRowBytes(c.Faces[Dface], layer, n, colR)
-		setColBytes(c.Faces[Lface], n-1-layer, n, rowD)
-		reverseBytes(colL)
-		setRowBytes(c.Faces[Uface], n-1-layer, n, colL)
+		rowU := (n1 - layer) * n
+		rowD := layer * n
+		colL, colR := layer, n1-layer
+
+		for i := 0; i < n; i++ {
+			uIdx := rowU + i
+			rIdx := i*n + colL
+			dIdx := rowD + (n1 - i)
+			lIdx := (n1-i)*n + colR
+
+			// cycle U ← L ← D ← R ← U
+			tmp = u[uIdx]
+			u[uIdx] = l[lIdx]
+			l[lIdx] = d[dIdx]
+			d[dIdx] = r[rIdx]
+			r[rIdx] = tmp
+		}
 	}
 }
 
-func (c *Cube) MoveFPrime(width int) { c.MoveF(width); c.MoveF(width); c.MoveF(width) }
+func (c *Cube) MoveFPrime(width int) {
+	n := c.Size
+	faces := c.Faces
+	u, r, d, l := faces[Uface], faces[Rface], faces[Dface], faces[Lface]
+
+	// rotate the front face CCW, and if it’s a full slice also rotate back CW
+	c.rotateFaceCCWBytes(Fface)
+	if width == n {
+		c.rotateFaceCWBytes(Bface)
+	}
+
+	n1 := n - 1
+	var tmp byte
+	for layer := 0; layer < width; layer++ {
+		rowU := (n1 - layer) * n
+		rowD := layer * n
+		colL, colR := layer, n1-layer
+
+		for i := 0; i < n; i++ {
+			uIdx := rowU + i
+			rIdx := i*n + colL
+			dIdx := rowD + (n1 - i)
+			lIdx := (n1-i)*n + colR
+
+			// inverse cycle U → R → D → L → U
+			tmp = u[uIdx]
+			u[uIdx] = r[rIdx]
+			r[rIdx] = d[dIdx]
+			d[dIdx] = l[lIdx]
+			l[lIdx] = tmp
+		}
+	}
+}
 
 func (c *Cube) MoveB(width int) {
 	n := c.Size
-	rotateFaceCWBytes(c.Faces[Bface], n)
+	faces := c.Faces
+	u, r, d, l := faces[Uface], faces[Rface], faces[Dface], faces[Lface]
+
+	// rotate the back face CW, and if it's a full slice also rotate front CCW
+	c.rotateFaceCWBytes(Bface)
 	if width == n {
-		rotateFaceCCWBytes(c.Faces[Fface], n)
+		c.rotateFaceCCWBytes(Fface)
 	}
+
+	n1 := n - 1
+	var tmp byte
 	for layer := 0; layer < width; layer++ {
-		rowU := getRowBytes(c.Faces[Uface], layer, n)
-		colL := getColBytes(c.Faces[Lface], layer, n)
-		rowD := getRowBytes(c.Faces[Dface], n-1-layer, n)
-		colR := getColBytes(c.Faces[Rface], n-1-layer, n)
-		reverseBytes(rowU)
-		setColBytes(c.Faces[Lface], layer, n, rowU)
-		setRowBytes(c.Faces[Dface], n-1-layer, n, colL)
-		reverseBytes(rowD)
-		setColBytes(c.Faces[Rface], n-1-layer, n, rowD)
-		setRowBytes(c.Faces[Uface], layer, n, colR)
+		rowU := layer
+		rowD := n1 - layer
+		for i := 0; i < n; i++ {
+			ui := rowU*n + i
+			ri := i*n + (n1 - layer)
+			di := rowD*n + (n1 - i)
+			li := (n1-i)*n + layer
+
+			// cycle U → R → D → L → U
+			tmp = u[ui]
+			u[ui] = r[ri]
+			r[ri] = d[di]
+			d[di] = l[li]
+			l[li] = tmp
+		}
 	}
 }
 
-func (c *Cube) MoveBPrime(width int) { c.MoveB(width); c.MoveB(width); c.MoveB(width) }
+func (c *Cube) MoveBPrime(width int) {
+	n := c.Size
+	faces := c.Faces
+	u, r, d, l := faces[Uface], faces[Rface], faces[Dface], faces[Lface]
+
+	// rotate the back face CCW, and if it's a full slice also rotate front CW
+	c.rotateFaceCCWBytes(Bface)
+	if width == n {
+		c.rotateFaceCWBytes(Fface)
+	}
+
+	n1 := n - 1
+	var tmp byte
+	for layer := 0; layer < width; layer++ {
+		rowU := layer
+		rowD := n1 - layer
+		for i := 0; i < n; i++ {
+			ui := rowU*n + i
+			ri := i*n + (n1 - layer)
+			di := rowD*n + (n1 - i)
+			li := (n1-i)*n + layer
+
+			// inverse cycle U ← R ← D ← L ← U
+			tmp = u[ui]
+			u[ui] = l[li]
+			l[li] = d[di]
+			d[di] = r[ri]
+			r[ri] = tmp
+		}
+	}
+}
 
 // Moves applies a sequence of moves, stripping parentheses.
 func (c *Cube) Moves(seqs ...string) error {
