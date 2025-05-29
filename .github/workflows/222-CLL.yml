@@ -4,11 +4,12 @@ permissions:
   contents: write        # for pushing JSON files
   pull-requests: write   # for opening the PR
   issues: write          # for creating/applying labels
-  
+
 on:
   workflow_dispatch:
 
 env:
+  PREFIX: 222-CLL
   DEPTH: 8
   MOVE_SET: "R R' R2 U U' U2 F F' F2"
 
@@ -32,14 +33,13 @@ jobs:
 
       - name: Run solver for ${{ matrix.id }}
         run: |
-          go run ./cmd config/222-CLL.csv ${{ matrix.id }} $DEPTH "$MOVE_SET"
+          go run ./cmd/cube config/${{ env.PREFIX }}.csv ${{ matrix.id }} ${{ env.DEPTH }} "$MOVE_SET"
 
       - name: Upload JSON results
         uses: actions/upload-artifact@v4
         with:
-          # unique per-matrix name so no conflicts
-          name: 222-CLL-results-${{ matrix.id }}
-          path: db/222-CLL/${{ matrix.id }}.json
+          name: ${{ env.PREFIX }}-results-${{ matrix.id }}
+          path: db/${{ env.PREFIX }}/${{ matrix.id }}.json
 
   pr:
     needs: solve
@@ -55,19 +55,19 @@ jobs:
       - name: Download all JSON results
         uses: actions/download-artifact@v4
         with:
-          path: db/222-CLL
-          pattern: 222-CLL-results-*
+          path: db/${{ env.PREFIX }}
+          pattern: ${{ env.PREFIX }}-results-*
           merge-multiple: true
-          
+
       - name: Create Pull Request with all results
         uses: peter-evans/create-pull-request@v7
         with:
           commit-message: |
-            Update solver results for 222-CLL (depth ${{ env.DEPTH }})
-          title: Update solver results for 222-CLL
+            Update solver results for ${{ env.PREFIX }} (depth ${{ env.DEPTH }})
+          title: Update solver results for ${{ env.PREFIX }}
           body: |
-            Update solver‐generated JSON outputs for the `222-CLL.csv` input at depth ${{ env.DEPTH }}.
-            Includes result files for each matrix ID under `db/222-CLL/`.
+            Update solver‐generated JSON outputs for the `\`${{ env.PREFIX }}.csv\`` input at depth ${{ env.DEPTH }}.
+            Includes result files for each matrix ID under `db/${{ env.PREFIX }}/`.
           base: main
-          branch: 222-CLL-results
-          labels: 222-CLL-results,222-CLL
+          branch: ${{ env.PREFIX }}-results
+          labels: ${{ env.PREFIX }}-results,${{ env.PREFIX }}
