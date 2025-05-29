@@ -1,9 +1,5 @@
 name: 222-CLL
 
-permissions:
-  contents: write
-  pull-requests: write
-
 on:
   workflow_dispatch:
 
@@ -19,8 +15,11 @@ jobs:
         id: [CLL_Sune_1, CLL_Sune_2, CLL_Sune_3, CLL_Sune_4, CLL_Sune_5, CLL_Sune_6]
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
         with:
           go-version: '1.21'
 
@@ -28,24 +27,32 @@ jobs:
         run: |
           go run ./cmd config/222-CLL.csv ${{ matrix.id }} $DEPTH "$MOVE_SET"
 
-      - name: Collect results paths
-        id: produce
-        run: |
-          echo "json-paths=db/222-CLL/${{ matrix.id }}.json" >> $GITHUB_OUTPUT
+      - name: Upload JSON results
+        uses: actions/upload-artifact@v4
+        with:
+          # unique per-matrix name so no conflicts
+          name: solver-results-${{ matrix.id }}
+          path: db/222-CLL/${{ matrix.id }}.json
 
   pr:
     needs: solve
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo (full history)
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: true
 
+      - name: Download all JSON results
+        uses: actions/download-artifact@v4
+        with:
+          path: .
+
       - name: Create Pull Request with all results
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: |
             Update solver results for 222-CLL (depth ${{ env.DEPTH }})
           title: Update solver results for 222-CLL
@@ -54,5 +61,3 @@ jobs:
           base: main
           branch: 222-CLL-results
           labels: solver-results
-          add-paths: |
-            db/222-CLL/*.json
