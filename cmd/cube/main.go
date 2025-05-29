@@ -124,15 +124,15 @@ func main() {
 		bar.Close()
 	}()
 
-	// Estimate time assuming 600k nodes per second
-	estSec := total / 600000
-	pkg.Printf("Estimated time at 600k nodes/s: %d seconds (~%s)\n", estSec, time.Duration(estSec)*time.Second)
+	// Estimate time assuming 3000k nodes per second
+	estSec := total / 3000000
+	pkg.Printf("Estimated time at 3000k nodes/s: %d seconds (~%s)\n", estSec, time.Duration(estSec)*time.Second)
 
 	// Measure start time
 	start := time.Now()
 
 	// Run parallel solver
-	solutions := pkg.FindSolutionsParallel(c, moves, isSolved, maxDepth, nil)
+	solutions := pkg.FindSolutionsParallelDFS(c, moves, isSolved, maxDepth, nil)
 
 	// Measure elapsed time and throughput
 	elapsed := time.Since(start)

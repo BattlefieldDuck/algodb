@@ -104,7 +104,7 @@ func TestSliceMoves(t *testing.T) {
 
 type FindSolutionsFunc func(initial *Cube, moveSet []string, check CheckFunc, maxDepth int, progress chan<- struct{}) []string
 
-func testFindSolutions(t *testing.T, findSolutions FindSolutionsFunc) {
+func testFindSolutions(t *testing.T, findSolutions FindSolutionsFunc, maxDepth int) {
 	c := NewCube(3)
 	c.Moves("R U2 R' U' R U' R'")
 	c.Display()
@@ -112,7 +112,6 @@ func testFindSolutions(t *testing.T, findSolutions FindSolutionsFunc) {
 
 	moves := []string{"R", "R'", "R2", "U", "U'", "U2", "F", "F'", "F2"}
 	check := func(c *Cube) bool { return c.IsSolved() }
-	maxDepth := 7
 	solutions := findSolutions(c, moves, check, maxDepth, nil)
 
 	// Print solutions
@@ -131,12 +130,16 @@ func testFindSolutions(t *testing.T, findSolutions FindSolutionsFunc) {
 }
 
 func TestFindSolutions(t *testing.T) {
-	testFindSolutions(t, FindSolutions)
+	testFindSolutions(t, FindSolutions, 7)
 }
 
 func TestFindSolutionsIter(t *testing.T) {
-	testFindSolutions(t, FindSolutionsIter)
+	testFindSolutions(t, FindSolutionsIter, 7)
 }
 func TestFindSolutionsParallel(t *testing.T) {
-	testFindSolutions(t, FindSolutionsParallel)
+	testFindSolutions(t, FindSolutionsParallel, 7)
+}
+
+func TestFindSolutionsParallelDFS(t *testing.T) {
+	testFindSolutions(t, FindSolutionsParallelDFS, 8)
 }
