@@ -5,3 +5,37 @@ CLL_Sune_3,F' R U R' U2 R' F2 R
 CLL_Sune_4,R' F R F' R U R'
 CLL_Sune_5,R' F2 R F' R' F2 R U' R' F R F'
 CLL_Sune_6,R U2 R' U2 R' F R F'
+CLL_AS_1,R U R' U R U2 R' U'
+CLL_AS_2,U2 R U R' U R' F R F' R U2 R'
+CLL_AS_3,F R' F' R U2 R U2 R' U2
+CLL_AS_4,R U' R' F R' F' R U2
+CLL_AS_5,R U R' U' R' F R F' R U R' U R U2 R' U
+CLL_AS_6,R' F2 R U2 R U' R' F U2
+CLL_Pi_1,R U' R2 U R2 U R2 U' R
+CLL_Pi_2,R U' R' U2 R' F R F' U2 R U R' U2
+CLL_Pi_3,R U R' U R U R' F R' F' R U2
+CLL_Pi_4,F R2 U' R2 U' R2 U R2 F' U'
+CLL_Pi_5,F R' F' R U2 R U' R' U R U2 R'
+CLL_Pi_6,R U2 R' U' R U R' U2 R' F R F' U'
+CLL_U_1,F U R U' R' F'
+CLL_U_2,R' U R' U2 R U2 R' U R2 U' R' U
+CLL_U_3,F' U F2 R F' R U R' U2 R'
+CLL_U_4,R U R' U2 R U R' U R' F R F'
+CLL_U_5,R U' R' U R U' R' F R' F' R2 U R' U'
+CLL_U_6,R' U' R U2 R' F R' F' R U' R U'
+CLL_L_1,F R U' R' U R U R' F'
+CLL_L_2,R U R' U' R' F R F'
+CLL_L_3,R U2 R' F R' F' R2 U2 R'
+CLL_L_4,R U' R U' R U2 R' U R' U R'
+CLL_L_5,R' U R U F R2 F' R U R U' R'
+CLL_L_6,R' U R' F R F' R U2 R' U R
+CLL_T_1,F R' F' R U R U' R'
+CLL_T_2,R U R U' R' F R' F'
+CLL_T_3,R U F R' F' R U2 R U2 R2
+CLL_T_4,R' F2 R U R' F R2 U2 R' U' R U' R'
+CLL_T_5,F R U' R' U R U R' U R U' R' F' U
+CLL_T_6,R' F R' F' R2 U2 R' U' R U'
+CLL_H_1,R2 U2 R' U2 R2 U
+CLL_H_2,F R U R' U' R U R' U' R U R' U' F' U
+CLL_H_3,R' F R F' R U' R' U' R U' R'
+CLL_H_4,F R2 U' R2 U R2 U R2 F'
