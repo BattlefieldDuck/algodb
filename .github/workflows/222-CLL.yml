@@ -64,7 +64,7 @@ jobs:
             Update solver results for ${{ env.PREFIX }} (depth ${{ env.DEPTH }})
           title: Update solver results for ${{ env.PREFIX }}
           body: |
-            Update solver‐generated JSON outputs for the `\`${{ env.PREFIX }}.csv\`` input at depth ${{ env.DEPTH }}.
+            Update solver-generated JSON outputs for the `${{ env.PREFIX }}.csv` input at depth ${{ env.DEPTH }}.
             Includes result files for each matrix ID under `db/${{ env.PREFIX }}/`.
           base: main
           branch: ${{ env.PREFIX }}-results

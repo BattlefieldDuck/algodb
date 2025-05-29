@@ -91,7 +91,7 @@ func main() {
 	pkg.Printf("MoveSet: %s\n", movesArg)
 
 	fmt.Printf("\n%dx%dx%d Cube - %s\n\n", n, n, n, scramble)
-	c.DisplayColor()
+	c.Display()
 	fmt.Println()
 
 	// Compute branching parameters
@@ -124,9 +124,9 @@ func main() {
 		bar.Close()
 	}()
 
-	// Estimate time assuming 3000k nodes per second
-	estSec := total / 3000000
-	pkg.Printf("Estimated time at 3000k nodes/s: %d seconds (~%s)\n", estSec, time.Duration(estSec)*time.Second)
+	// Estimate time assuming 6000k nodes per second
+	estSec := total / 6000000
+	pkg.Printf("Estimated time at 6000k nodes/s: %d seconds (~%s)\n", estSec, time.Duration(estSec)*time.Second)
 
 	// Measure start time
 	start := time.Now()
