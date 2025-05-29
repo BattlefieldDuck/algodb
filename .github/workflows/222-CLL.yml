@@ -16,8 +16,6 @@ jobs:
   solve:
     runs-on: ubuntu-latest
     env:
-      FORCE_COLOR: "1"
-      TERM: xterm-256color
       NO_COLOR: false
     strategy:
       matrix:
@@ -40,7 +38,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           # unique per-matrix name so no conflicts
-          name: 222-CLL-results-${{ matrix.id }}
+          name: 222-CLL-results
           path: db/222-CLL/${{ matrix.id }}.json
 
   pr:
@@ -57,6 +55,7 @@ jobs:
       - name: Download all JSON results
         uses: actions/download-artifact@v4
         with:
+          name: 222-CLL-results
           path: db/222-CLL
 
       - name: Create Pull Request with all results
