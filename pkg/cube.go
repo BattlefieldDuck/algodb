@@ -525,23 +525,45 @@ func (c *Cube) Moves(seqs ...string) error {
 	return nil
 }
 
-// mapping for wide vs normal moves
-var mapping = map[string]struct {
-	face       int
-	isWide     bool
-	isRotation bool
-	isSlice    bool
-}{
-	"U": {Uface, false, false, false}, "D": {Dface, false, false, false}, "R": {Rface, false, false, false},
-	"L": {Lface, false, false, false}, "F": {Fface, false, false, false}, "B": {Bface, false, false, false},
-	"Uw": {Uface, true, false, false}, "u": {Uface, true, false, false},
-	"Dw": {Dface, true, false, false}, "d": {Dface, true, false, false},
-	"Rw": {Rface, true, false, false}, "r": {Rface, true, false, false},
-	"Lw": {Lface, true, false, false}, "l": {Lface, true, false, false},
-	"Fw": {Fface, true, false, false}, "f": {Fface, true, false, false},
-	"Bw": {Bface, true, false, false}, "b": {Bface, true, false, false},
-	"x": {Rface, false, true, false}, "y": {Uface, false, true, false}, "z": {Fface, false, true, false},
-	"M": {Lface, false, false, true}, "E": {Dface, false, false, true}, "S": {Fface, false, false, true},
+const (
+	flagWide  = 1 << 3
+	flagRot   = 1 << 4
+	flagSlice = 1 << 5
+	faceMask  = (1 << 3) - 1 // lower 3 bits for face id
+)
+
+var moveMap = map[string]uint8{
+	// normals
+	"U": Uface,
+	"D": Dface,
+	"R": Rface,
+	"L": Lface,
+	"F": Fface,
+	"B": Bface,
+
+	// wides
+	"Uw": Uface | flagWide,
+	"u":  Uface | flagWide,
+	"Dw": Dface | flagWide,
+	"d":  Dface | flagWide,
+	"Rw": Rface | flagWide,
+	"r":  Rface | flagWide,
+	"Lw": Lface | flagWide,
+	"l":  Lface | flagWide,
+	"Fw": Fface | flagWide,
+	"f":  Fface | flagWide,
+	"Bw": Bface | flagWide,
+	"b":  Bface | flagWide,
+
+	// rotations
+	"x": Rface | flagRot,
+	"y": Uface | flagRot,
+	"z": Fface | flagRot,
+
+	// slices
+	"M": Lface | flagSlice,
+	"E": Dface | flagSlice,
+	"S": Fface | flagSlice,
 }
 
 // Move parses a notation (e.g. "R2'", "u"), then calls the appropriate face-turn.
@@ -565,33 +587,36 @@ func (c *Cube) Move(notation string) error {
 	}
 
 	// mapping
+	var face int
 	isSlice := false
-	if m, ok := mapping[notation]; ok {
-		notation = ""
-		// use face index from m.face
-		// set width=2 if isWide && width<=1
-		if m.isWide && width < 2 {
-			width = 2
-		}
+	if m, ok := moveMap[notation]; ok {
+		face = int(m & faceMask)
 
-		if m.isRotation {
+		switch {
+		case m&flagWide != 0:
+			// set width=2 if isWide && width<=1
+			if width < 2 {
+				width = 2
+			}
+
+		case m&flagRot != 0:
 			width = c.Size
+
+		case m&flagSlice != 0:
+			isSlice = true
 		}
-
-		isSlice = m.isSlice
-
-		notation = fmt.Sprint(m.face) // replaced below
 	}
+
 	// apply move times times
-	for i := 0; i < times; i++ {
-		switch notation {
-		case fmt.Sprint(Uface):
+	for range times {
+		switch face {
+		case Uface:
 			if isPrime {
 				c.MoveUPrime(width)
 			} else {
 				c.MoveU(width)
 			}
-		case fmt.Sprint(Dface):
+		case Dface:
 			if isSlice {
 				// E slice move
 				if isPrime {
@@ -606,13 +631,13 @@ func (c *Cube) Move(notation string) error {
 			} else {
 				c.MoveD(width)
 			}
-		case fmt.Sprint(Rface):
+		case Rface:
 			if isPrime {
 				c.MoveRPrime(width)
 			} else {
 				c.MoveR(width)
 			}
-		case fmt.Sprint(Lface):
+		case Lface:
 			if isSlice {
 				// M slice move
 				if isPrime {
@@ -627,7 +652,7 @@ func (c *Cube) Move(notation string) error {
 			} else {
 				c.MoveL(width)
 			}
-		case fmt.Sprint(Fface):
+		case Fface:
 			if isSlice {
 				// S slice move
 				if isPrime {
@@ -642,7 +667,7 @@ func (c *Cube) Move(notation string) error {
 			} else {
 				c.MoveF(width)
 			}
-		case fmt.Sprint(Bface):
+		case Bface:
 			if isPrime {
 				c.MoveBPrime(width)
 			} else {
