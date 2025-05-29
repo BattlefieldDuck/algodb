@@ -105,7 +105,7 @@ const (
 // DisplayColorANSI prints the cube with ANSI-colored stickers.
 func (c *Cube) DisplayColorANSI() {
 	n := c.Size
-	indent := strings.Repeat(" ", n*2)
+	indent := strings.Repeat("⠀", n*2)
 	// helper to paint a row of stickers
 	paintRow := func(cells []byte) {
 		for _, idx := range cells {
@@ -144,7 +144,7 @@ func (c *Cube) DisplayColorANSIUFace() {
 	tmp.MoveRPrime(c.Size)
 
 	n := tmp.Size
-	indent := strings.Repeat(" ", 4)
+	indent := strings.Repeat("⠀", 4)
 	// helper to paint a row of stickers
 	paintRow := func(cells []byte) {
 		for _, idx := range cells {
