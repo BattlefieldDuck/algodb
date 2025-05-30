@@ -168,7 +168,7 @@ func (c *Cube) DisplayColorANSIUFace() {
 		row = append(row, tmp.Faces[Fface][r*n:r*n+n]...)
 		row = append(row, tmp.Faces[Rface][r*n:r*n+1]...)
 
-		fmt.Print("  ")
+		fmt.Print(sticker)
 		paintRow(row)
 	}
 
