@@ -7,19 +7,9 @@ import (
 
 // op bundles a move notation and its inverse for fast backtracking
 type op struct {
-	notation string
-	inv      string
-}
-
-// inverseOf returns the inverse of a move notation (e.g. "R"→"R'", "R'"→"R", "R2"→"R2")
-func inverseOf(m string) string {
-	if strings.HasSuffix(m, "'") {
-		return m[:len(m)-1]
-	}
-	if strings.HasSuffix(m, "2") {
-		return m
-	}
-	return m + "'"
+	notation           string
+	face, count, width int
+	isPrime, isSlice   bool
 }
 
 // FindSolutionsParallelDFS launches one goroutine per first move and performs
@@ -34,7 +24,8 @@ func FindSolutionsParallelDFS(
 	// precompute ops
 	ops := make([]op, len(moves))
 	for i, m := range moves {
-		ops[i] = op{notation: m, inv: inverseOf(m)}
+		face, count, width, isPrime, isSlice := initial.parseNotation(m)
+		ops[i] = op{m, face, count, width, isPrime, isSlice}
 	}
 
 	var (
@@ -43,53 +34,66 @@ func FindSolutionsParallelDFS(
 		solutions []string
 	)
 
-	// recursive DFS closure
-	var dfs func(c *Cube, path []string, depth int)
-	dfs = func(c *Cube, path []string, depth int) {
-		// tick progress
-		if progress != nil {
-			progress <- struct{}{}
-		}
-		// record solution
-		if check(c) {
-			seq := strings.Join(path, " ")
-			solMu.Lock()
-			solutions = append(solutions, seq)
-			solMu.Unlock()
-		}
-		if depth == maxDepth {
-			return
-		}
-
-		lastFace := path[len(path)-1][0]
-		for _, op := range ops {
-			if op.notation[0] == lastFace {
-				continue
-			}
-			// apply move
-			c.Move(op.notation)
-			path = append(path, op.notation)
-
-			dfs(c, path, depth+1)
-
-			// backtrack
-			path = path[:len(path)-1]
-			c.Move(op.inv)
-		}
-	}
-
 	// spawn one goroutine per first move
 	for _, root := range ops {
 		wg.Add(1)
 		go func(root op) {
 			defer wg.Done()
+
+			// === per-goroutine local buffer ===
+			var local []string
+
 			// one copy per branch
 			c := initial.Copy()
-			c.Move(root.notation)
+			c.PerformFaceTurn(root.face, root.count, root.width, root.isPrime, root.isSlice)
+
+			// recursive DFS closure
+			var dfs func(c *Cube, path []op)
+			dfs = func(c *Cube, path []op) {
+				// tick progress
+				if progress != nil {
+					progress <- struct{}{}
+				}
+				// record solution
+				if check(c) {
+					notes := make([]string, len(path))
+					for i, o := range path {
+						notes[i] = o.notation
+					}
+					local = append(local, strings.Join(notes, " "))
+					return
+				}
+				if len(path) == maxDepth {
+					return
+				}
+
+				lastFace := path[len(path)-1].face
+				for _, op := range ops {
+					if op.face == lastFace {
+						continue
+					}
+
+					// apply move
+					c.PerformFaceTurn(op.face, op.count, op.width, op.isPrime, op.isSlice)
+					path = append(path, op)
+
+					dfs(c, path)
+
+					// backtrack
+					path = path[:len(path)-1]
+					c.PerformFaceTurn(op.face, op.count, op.width, !op.isPrime, op.isSlice)
+				}
+			}
 
 			// start path
-			path := []string{root.notation}
-			dfs(c, path, 1)
+			path := make([]op, 0, maxDepth+1)
+			path = append(path, root)
+			dfs(c, path)
+
+			// merge once
+			solMu.Lock()
+			solutions = append(solutions, local...)
+			solMu.Unlock()
 		}(root)
 	}
 

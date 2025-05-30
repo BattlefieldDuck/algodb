@@ -127,9 +127,9 @@ func main() {
 		bar.Close()
 	}()
 
-	// Estimate time assuming 50000k nodes per second
-	estSec := total / 50000000
-	pkg.Printf("Estimated time at 50000k nodes/s: %d seconds (~%s)\n", estSec, time.Duration(estSec)*time.Second)
+	// Estimate time assuming 100000k nodes per second
+	estSec := total / 100000000
+	pkg.Printf("Estimated time at 100000k nodes/s: %d seconds (~%s)\n", estSec, time.Duration(estSec)*time.Second)
 
 	// Measure start time
 	start := time.Now()

@@ -689,31 +689,29 @@ var moveMap = map[string]uint8{
 	"S": Fface | flagSlice,
 }
 
-// Move parses a notation (e.g. "R2'", "u"), then calls the appropriate face-turn.
-func (c *Cube) Move(notation string) error {
-	width := 1
+func (c *Cube) parseNotation(notation string) (face, count, width int, isPrime, isSlice bool) {
+	width = 1
 	// leading digit as width
 	if len(notation) > 0 && notation[0] >= '0' && notation[0] <= '9' {
 		width = int(notation[0] - '0')
 		notation = notation[1:]
 	}
 	// prime suffix
-	isPrime := false
+	isPrime = false
 	if n := len(notation); n > 0 && notation[n-1] == '\'' {
 		isPrime = true
 		notation = notation[:n-1]
 	}
 
 	// double suffix
-	times := 1
+	count = 1
 	if n := len(notation); n > 0 && notation[n-1] == '2' {
-		times = 2
+		count = 2
 		notation = notation[:n-1]
 	}
 
 	// mapping
-	var face int
-	isSlice := false
+	isSlice = false
 	if m, ok := moveMap[notation]; ok {
 		face = int(m & faceMask)
 
@@ -732,8 +730,19 @@ func (c *Cube) Move(notation string) error {
 		}
 	}
 
+	return face, count, width, isPrime, isSlice
+}
+
+// Move parses a notation (e.g. "R2'", "u"), then calls the appropriate face-turn.
+func (c *Cube) Move(notation string) error {
+	face, count, width, isPrime, isSlice := c.parseNotation(notation)
+
 	// apply move times times
-	for range times {
+	return c.PerformFaceTurn(face, count, width, isPrime, isSlice)
+}
+
+func (c *Cube) PerformFaceTurn(face, count, width int, isPrime bool, isSlice bool) error {
+	for range count {
 		switch face {
 		case Uface:
 			if isPrime {
@@ -799,9 +808,10 @@ func (c *Cube) Move(notation string) error {
 				c.MoveB(width)
 			}
 		default:
-			return fmt.Errorf("invalid move: %s", notation)
+			return fmt.Errorf("invalid face: %d", face)
 		}
 	}
+
 	return nil
 }
 
