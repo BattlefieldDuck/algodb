@@ -145,7 +145,14 @@ func main() {
 
 	// Sort solutions by length (fewest moves first)
 	sort.Slice(solutions, func(i, j int) bool {
-		return len(strings.Fields(solutions[i])) < len(strings.Fields(solutions[j]))
+		a, b := solutions[i], solutions[j]
+		na := len(strings.Fields(a)) // number of moves in a
+		nb := len(strings.Fields(b)) // number of moves in b
+
+		if na != nb {
+			return na < nb // fewer moves comes first
+		}
+		return a < b // tie-breaker: lexicographical order
 	})
 
 	// Print solutions
