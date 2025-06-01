@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"strings"
 	"sync"
 )
 
@@ -20,7 +19,7 @@ func FindSolutionsParallelDFS(
 	check CheckFunc,
 	maxDepth int,
 	progress chan<- struct{},
-) []string {
+) [][]string {
 	// precompute ops
 	ops := make([]op, len(moves))
 	for i, m := range moves {
@@ -31,7 +30,7 @@ func FindSolutionsParallelDFS(
 	var (
 		wg        sync.WaitGroup
 		solMu     sync.Mutex
-		solutions []string
+		solutions [][]string
 	)
 
 	// spawn one goroutine per first move
@@ -41,7 +40,7 @@ func FindSolutionsParallelDFS(
 			defer wg.Done()
 
 			// === per-goroutine local buffer ===
-			var local []string
+			var local [][]op
 
 			// one copy per branch
 			c := initial.Copy()
@@ -56,11 +55,10 @@ func FindSolutionsParallelDFS(
 				}
 				// record solution
 				if check(c) {
-					notes := make([]string, len(path))
-					for i, o := range path {
-						notes[i] = o.notation
-					}
-					local = append(local, strings.Join(notes, " "))
+					// deep-copy the path before recording
+					cp := make([]op, len(path))
+					copy(cp, path)
+					local = append(local, cp)
 					return
 				}
 				if len(path) == maxDepth {
@@ -92,7 +90,18 @@ func FindSolutionsParallelDFS(
 
 			// merge once
 			solMu.Lock()
-			solutions = append(solutions, local...)
+
+			for _, ops := range local {
+				// make a []string the same length as this []op
+				seq := make([]string, len(ops))
+				// fill it with the notation of each op
+				for i, op := range ops {
+					seq[i] = op.notation
+				}
+				// now append that []string to your solutions
+				solutions = append(solutions, seq)
+			}
+
 			solMu.Unlock()
 		}(root)
 	}

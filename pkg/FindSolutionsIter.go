@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"slices"
-	"strings"
 )
 
 func FindSolutionsIter(
@@ -11,12 +10,12 @@ func FindSolutionsIter(
 	check CheckFunc,
 	maxDepth int,
 	progress chan<- struct{},
-) []string {
+) [][]string {
 	type frame struct {
 		path []string // moves so far
 	}
 
-	solutions := make([]string, 0)
+	solutions := make([][]string, 0)
 	// our explicit stack of frames
 	stack := []frame{{path: []string{}}}
 
@@ -50,9 +49,7 @@ func FindSolutionsIter(
 
 			// record solution
 			if check(next) {
-				seq := strings.Join(newPath, " ")
-				solutions = append(solutions, seq)
-				Printf("Solution found: %s\n", seq)
+				solutions = append(solutions, newPath)
 			}
 
 			// if we can go deeper, push onto stack

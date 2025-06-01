@@ -11,11 +11,11 @@ func FindSolutionsParallel(
 	check CheckFunc,
 	maxDepth int,
 	progress chan<- struct{},
-) []string {
+) [][]string {
 	var (
 		wg        sync.WaitGroup
 		solMu     sync.Mutex
-		solutions []string
+		solutions [][]string
 	)
 
 	for _, first := range moves {
@@ -50,19 +50,9 @@ func FindSolutionsParallel(
 
 				// record solution if solved
 				if check(next) {
-					seq := ""
-					for i, mv := range f.path {
-						if i > 0 {
-							seq += " "
-						}
-						seq += mv
-					}
-
 					solMu.Lock()
-					solutions = append(solutions, seq)
+					solutions = append(solutions, f.path)
 					solMu.Unlock()
-
-					Printf("Solution found: %s\n", seq)
 				}
 
 				// push deeper children

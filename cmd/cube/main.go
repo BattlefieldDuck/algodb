@@ -2,17 +2,16 @@ package main
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"log"
 	"math"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/BattlefieldDuck/algodb/internal"
 	"github.com/BattlefieldDuck/algodb/pkg"
 	"github.com/schollz/progressbar/v3"
 )
@@ -143,64 +142,12 @@ func main() {
 	throughput := float64(total) / elapsed.Seconds()
 	pkg.Printf("Nodes per second: %.2f\n", throughput)
 
-	// Sort solutions by length (fewest moves first)
-	sort.Slice(solutions, func(i, j int) bool {
-		a, b := solutions[i], solutions[j]
-		na := len(strings.Fields(a)) // number of moves in a
-		nb := len(strings.Fields(b)) // number of moves in b
-
-		if na != nb {
-			return na < nb // fewer moves comes first
-		}
-		return a < b // tie-breaker: lexicographical order
-	})
-
 	// Print solutions
 	pkg.Printf("Found %d solution(s):\n\n", len(solutions))
 	for i, sol := range solutions {
-		fmt.Printf("%2d [%d]: %s\n", i+1, len(strings.Fields(sol)), sol)
+		fmt.Printf("%2d [%d]: %s\n", i+1, len(sol), strings.Join(sol, " "))
 	}
 	fmt.Println()
 
-	// Prepare result struct
-	result := struct {
-		ConfigPath string        `json:"config_path"`
-		ID         string        `json:"id"`
-		Scramble   string        `json:"scramble"`
-		MaxDepth   int           `json:"max_depth"`
-		MoveSet    []string      `json:"move_set"`
-		TotalNodes int           `json:"total_nodes"`
-		ElapsedNS  time.Duration `json:"elapsed_ns"`
-		Elapsed    string        `json:"elapsed"`
-		Throughput float64       `json:"throughput"`
-		Solutions  []string      `json:"solutions"`
-		CreatedAt  time.Time     `json:"created_at"`
-	}{
-		ConfigPath: configPath,
-		ID:         targetID,
-		Scramble:   scramble,
-		MaxDepth:   maxDepth,
-		MoveSet:    moves,
-		TotalNodes: total,
-		ElapsedNS:  elapsed,
-		Elapsed:    elapsed.String(),
-		Throughput: throughput,
-		Solutions:  solutions,
-		CreatedAt:  time.Now(),
-	}
-
-	// Save results to JSON file in ./db/<configName>
-	outDir := filepath.Join("db", name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		log.Fatalf("Error creating results dir: %v", err)
-	}
-	fname := filepath.Join(outDir, fmt.Sprintf("%s.json", targetID))
-	data, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		log.Fatalf("Error marshaling result: %v", err)
-	}
-	if err := os.WriteFile(fname, data, 0644); err != nil {
-		log.Fatalf("Error writing result file: %v", err)
-	}
-	pkg.Printf("Saved results to %s\n", fname)
+	internal.CreateAlgorithms(name, targetID, solutions)
 }
