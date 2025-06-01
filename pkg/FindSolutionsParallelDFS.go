@@ -53,32 +53,35 @@ func FindSolutionsParallelDFS(
 				if progress != nil {
 					progress <- struct{}{}
 				}
+
+				l := len(path)
+
 				// record solution
 				if check(c) {
 					// deep-copy the path before recording
-					cp := make([]op, len(path))
+					cp := make([]op, l)
 					copy(cp, path)
 					local = append(local, cp)
 					return
 				}
-				if len(path) == maxDepth {
+				if l == maxDepth {
 					return
 				}
 
-				lastFace := path[len(path)-1].face
+				lastFace := path[l-1].face
 				for _, op := range ops {
 					if op.face == lastFace {
 						continue
 					}
 
 					// apply move
-					c.PerformFaceTurn(op.face, op.count, op.width, op.isPrime, op.isSlice)
 					path = append(path, op)
+					c.PerformFaceTurn(op.face, op.count, op.width, op.isPrime, op.isSlice)
 
 					dfs(c, path)
 
 					// backtrack
-					path = path[:len(path)-1]
+					path = path[:l]
 					c.PerformFaceTurn(op.face, op.count, op.width, !op.isPrime, op.isSlice)
 				}
 			}
