@@ -17,6 +17,8 @@ sequenceDiagram
     participant CFG as Config CSV
     participant Solver as Cube Solver
     participant DB as DB Folder (CSV)
+    participant GH as GitHub API
+
     GA->>Prog: Trigger job
     Prog->>CFG: Read scramble CSV files
     CFG-->>Prog: Return scramble data
@@ -25,7 +27,8 @@ sequenceDiagram
     Solver-->>Prog: Return solution data
     Prog->>Prog: Format solution data
     Prog->>DB: Write solution CSV files
-
+    GA->>GH: Create Pull Request
+    GH-->>GA: Pull Request Created
 ```
 
 ## License
