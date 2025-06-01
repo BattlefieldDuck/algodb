@@ -1,7 +1,7 @@
 name: 222-PBL
 
 permissions:
-  contents: write        # for pushing JSON files
+  contents: write        # for pushing csv files
   pull-requests: write   # for opening the PR
   issues: write          # for creating/applying labels
 
@@ -33,11 +33,11 @@ jobs:
         run: |
           go run ./cmd/cube config/${{ env.PREFIX }}.csv ${{ matrix.id }} ${{ env.DEPTH }} "$MOVE_SET"
 
-      - name: Upload JSON results
+      - name: Upload csv results
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PREFIX }}-results-${{ matrix.id }}
-          path: db/${{ env.PREFIX }}/${{ matrix.id }}.json
+          path: db/${{ env.PREFIX }}/${{ matrix.id }}.csv
 
   pr:
     needs: solve
@@ -50,7 +50,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Download all JSON results
+      - name: Download all csv results
         uses: actions/download-artifact@v4
         with:
           path: db/${{ env.PREFIX }}
@@ -64,7 +64,7 @@ jobs:
             Update solver results for ${{ env.PREFIX }} (depth ${{ env.DEPTH }})
           title: Update solver results for ${{ env.PREFIX }}
           body: |
-            Update solver-generated JSON outputs for the `${{ env.PREFIX }}.csv` input at depth ${{ env.DEPTH }}.
+            Update solver-generated csv outputs for the `${{ env.PREFIX }}.csv` input at depth ${{ env.DEPTH }}.
             Includes result files for each matrix ID under `db/${{ env.PREFIX }}/`.
           base: main
           branch: ${{ env.PREFIX }}-results
