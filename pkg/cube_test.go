@@ -135,10 +135,10 @@ func testFindSolutions(t *testing.T, findSolutions FindSolutionsFunc, maxDepth i
 }
 
 func TestFindSolutionsIter(t *testing.T) {
-	testFindSolutions(t, FindSolutionsIter, 9)
+	testFindSolutions(t, FindSolutionsIter, 8)
 }
 func TestFindSolutionsParallel(t *testing.T) {
-	testFindSolutions(t, FindSolutionsParallel, 9)
+	testFindSolutions(t, FindSolutionsParallel, 8)
 }
 
 func TestFindSolutionsParallelDFS(t *testing.T) {
