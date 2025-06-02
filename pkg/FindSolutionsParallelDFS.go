@@ -6,9 +6,10 @@ import (
 
 // op bundles a move notation and its inverse for fast backtracking
 type op struct {
-	notation           string
-	face, count, width int
-	isPrime, isSlice   bool
+	notation string
+	face     int
+	apply    func(c *Cube)
+	undo     func(c *Cube)
 }
 
 // FindSolutionsParallelDFS launches one goroutine per first move and performs
@@ -23,8 +24,8 @@ func FindSolutionsParallelDFS(
 	// precompute ops
 	ops := make([]op, len(moves))
 	for i, m := range moves {
-		face, count, width, isPrime, isSlice := initial.parseNotation(m)
-		ops[i] = op{m, face, count, width, isPrime, isSlice}
+		face, apply, undo := initial.CreateOp(m)
+		ops[i] = op{m, face, apply, undo}
 	}
 
 	var (
@@ -44,7 +45,7 @@ func FindSolutionsParallelDFS(
 
 			// one copy per branch
 			c := initial.Copy()
-			c.PerformFaceTurn(root.face, root.count, root.width, root.isPrime, root.isSlice)
+			root.apply(c)
 
 			// recursive DFS closure
 			var dfs func(c *Cube, path []op)
@@ -76,13 +77,13 @@ func FindSolutionsParallelDFS(
 
 					// apply move
 					path = append(path, op)
-					c.PerformFaceTurn(op.face, op.count, op.width, op.isPrime, op.isSlice)
+					op.apply(c)
 
 					dfs(c, path)
 
 					// backtrack
 					path = path[:l]
-					c.PerformFaceTurn(op.face, op.count, op.width, !op.isPrime, op.isSlice)
+					op.undo(c)
 				}
 			}
 

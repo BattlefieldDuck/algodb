@@ -636,6 +636,36 @@ func (c *Cube) MoveBPrime(width int) {
 	}
 }
 
+func (c *Cube) MoveM() {
+	c.MoveLPrime(1)
+	c.MoveL(c.Size - 1)
+}
+
+func (c *Cube) MoveMPrime() {
+	c.MoveL(1)
+	c.MoveLPrime(c.Size - 1)
+}
+
+func (c *Cube) MoveE() {
+	c.MoveDPrime(1)
+	c.MoveD(c.Size - 1)
+}
+
+func (c *Cube) MoveEPrime() {
+	c.MoveD(1)
+	c.MoveDPrime(c.Size - 1)
+}
+
+func (c *Cube) MoveS() {
+	c.MoveFPrime(1)
+	c.MoveF(c.Size - 1)
+}
+
+func (c *Cube) MoveSPrime() {
+	c.MoveF(1)
+	c.MoveFPrime(c.Size - 1)
+}
+
 // Moves applies a sequence of moves, stripping parentheses.
 func (c *Cube) Moves(seqs ...string) error {
 	seq := strings.Join(seqs, " ")
@@ -689,8 +719,9 @@ var moveMap = map[string]uint8{
 	"S": Fface | flagSlice,
 }
 
-func (c *Cube) parseNotation(notation string) (face, count, width int, isPrime, isSlice bool) {
+func (c *Cube) parseNotation(notation string) (face, count, width int, isPrime, isSlice bool, err error) {
 	width = 1
+
 	// leading digit as width
 	if len(notation) > 0 && notation[0] >= '0' && notation[0] <= '9' {
 		width = int(notation[0] - '0')
@@ -717,98 +748,185 @@ func (c *Cube) parseNotation(notation string) (face, count, width int, isPrime, 
 
 		switch {
 		case m&flagWide != 0:
-			// set width=2 if isWide && width<=1
+			// if it’s a “wide” move and user didn’t specify width ≥ 2 already,
+			// force width to 2
 			if width < 2 {
 				width = 2
 			}
 
 		case m&flagRot != 0:
+			// a whole‐cube rotation (x, y, z) → width = cube size
 			width = c.Size
 
 		case m&flagSlice != 0:
+			// slice move (E, M, or S)
 			isSlice = true
 		}
+
+		return face, count, width, isPrime, isSlice, nil
 	}
 
-	return face, count, width, isPrime, isSlice
+	// if we fall through, notation wasn’t in moveMap→ return zero values + an error
+	return 0, 0, 0, false, false,
+		fmt.Errorf("parseNotation: invalid move “%s”", notation)
 }
 
 // Move parses a notation (e.g. "R2'", "u"), then calls the appropriate face-turn.
 func (c *Cube) Move(notation string) error {
-	face, count, width, isPrime, isSlice := c.parseNotation(notation)
+	face, count, width, isPrime, isSlice, err := c.parseNotation(notation)
+	if err != nil {
+		return err
+	}
 
-	// apply move times times
-	return c.PerformFaceTurn(face, count, width, isPrime, isSlice)
+	// FaceTurnFunc now returns func() error
+	faceTurnFunc(face, count, width, isPrime, isSlice)(c)
+
+	return nil
 }
 
-func (c *Cube) PerformFaceTurn(face, count, width int, isPrime bool, isSlice bool) error {
-	for range count {
-		switch face {
-		case Uface:
-			if isPrime {
-				c.MoveUPrime(width)
-			} else {
-				c.MoveU(width)
-			}
-		case Dface:
-			if isSlice {
-				// E slice move
-				if isPrime {
-					c.MoveD(1)
-					c.MoveDPrime(c.Size - 1)
-				} else {
-					c.MoveDPrime(1)
-					c.MoveD(c.Size - 1)
+func (c *Cube) CreateOp(notation string) (int, func(c *Cube), func(c *Cube)) {
+	face, count, width, isPrime, isSlice, _ := c.parseNotation(notation)
+	apply := faceTurnFunc(face, count, width, isPrime, isSlice)
+	undo := faceTurnFunc(face, count, width, !isPrime, isSlice)
+	return face, apply, undo
+}
+
+// instead of executing immediately, return a closure that will perform the moves when called
+func faceTurnFunc(face, count, width int, isPrime, isSlice bool) func(c *Cube) {
+	switch face {
+	case Uface:
+		if isPrime {
+			return func(c *Cube) {
+				for range count {
+					c.MoveUPrime(width)
 				}
-			} else if isPrime {
-				c.MoveDPrime(width)
-			} else {
-				c.MoveD(width)
 			}
-		case Rface:
-			if isPrime {
-				c.MoveRPrime(width)
-			} else {
-				c.MoveR(width)
-			}
-		case Lface:
-			if isSlice {
-				// M slice move
-				if isPrime {
-					c.MoveL(1)
-					c.MoveLPrime(c.Size - 1)
-				} else {
-					c.MoveLPrime(1)
-					c.MoveL(c.Size - 1)
+		} else {
+			return func(c *Cube) {
+				for range count {
+					c.MoveU(width)
 				}
-			} else if isPrime {
-				c.MoveLPrime(width)
-			} else {
-				c.MoveL(width)
 			}
-		case Fface:
-			if isSlice {
-				// S slice move
-				if isPrime {
-					c.MoveF(1)
-					c.MoveFPrime(c.Size - 1)
-				} else {
-					c.MoveFPrime(1)
-					c.MoveF(c.Size - 1)
-				}
-			} else if isPrime {
-				c.MoveFPrime(width)
-			} else {
-				c.MoveF(width)
-			}
-		case Bface:
+		}
+
+	case Dface:
+		if isSlice {
+			// E‐slice move
 			if isPrime {
-				c.MoveBPrime(width)
+				return func(c *Cube) {
+					for range count {
+						c.MoveEPrime()
+					}
+				}
 			} else {
-				c.MoveB(width)
+				return func(c *Cube) {
+					for range count {
+						c.MoveE()
+					}
+				}
 			}
-		default:
-			return fmt.Errorf("invalid face: %d", face)
+		} else if isPrime {
+			return func(c *Cube) {
+				for range count {
+					c.MoveDPrime(width)
+				}
+			}
+		} else {
+			return func(c *Cube) {
+				for range count {
+					c.MoveD(width)
+				}
+			}
+		}
+
+	case Rface:
+		if isPrime {
+			return func(c *Cube) {
+				for range count {
+					c.MoveRPrime(width)
+				}
+			}
+		} else {
+			return func(c *Cube) {
+				for range count {
+					c.MoveR(width)
+				}
+			}
+		}
+
+	case Lface:
+		if isSlice {
+			// M‐slice move
+			if isPrime {
+				return func(c *Cube) {
+					for range count {
+						c.MoveMPrime()
+					}
+				}
+			} else {
+				return func(c *Cube) {
+					for range count {
+						c.MoveM()
+					}
+				}
+			}
+		} else if isPrime {
+			return func(c *Cube) {
+				for range count {
+					c.MoveLPrime(width)
+				}
+			}
+		} else {
+			return func(c *Cube) {
+				for range count {
+					c.MoveL(width)
+				}
+			}
+		}
+
+	case Fface:
+		if isSlice {
+			// S‐slice move
+			if isPrime {
+				return func(c *Cube) {
+					for range count {
+						c.MoveSPrime()
+					}
+				}
+			} else {
+				return func(c *Cube) {
+					for range count {
+						c.MoveS()
+					}
+				}
+			}
+		} else if isPrime {
+			return func(c *Cube) {
+				for range count {
+					c.MoveFPrime(width)
+				}
+			}
+		} else {
+			return func(c *Cube) {
+				for range count {
+					c.MoveF(width)
+				}
+			}
+		}
+
+	case Bface:
+		if isPrime {
+			return func(c *Cube) {
+				for range count {
+					c.MoveBPrime(width)
+				}
+			}
+		} else {
+			return func(c *Cube) {
+				for range count {
+					c.MoveB(width)
+				}
+			}
 		}
 	}
 
