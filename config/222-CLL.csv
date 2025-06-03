@@ -3,7 +3,7 @@ CLL_Sune_1,R U2 R' U' R U' R'
 CLL_Sune_2,R U' R2 U R U F R2 F' R U
 CLL_Sune_3,F' R U R' U2 R' F2 R
 CLL_Sune_4,R' F R F' R U R'
-CLL_Sune_5,R' F2 R F' R' F2 R U' R' F R F'
+CLL_Sune_5,R' F2 R F' R' F2 R U' R' F R F' U'
 CLL_Sune_6,R U2 R' U2 R' F R F'
 CLL_AS_1,R U R' U R U2 R' U'
 CLL_AS_2,U2 R U R' U R' F R F' R U2 R'
